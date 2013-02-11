@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	Config    conf.ConfigFile
+	Config    *conf.ConfigFile
 	DocRoot   string
 	AppRoot   string
 	Hostname  string
@@ -43,7 +43,9 @@ var (
 
 func Init(configFile string) {
 
-	Config, err := conf.ReadConfigFile(configFile)
+	var err error
+
+	Config, err = conf.ReadConfigFile(configFile)
 	if err != nil {
 		log.Fatal(err)
 	}
