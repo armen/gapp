@@ -9,8 +9,8 @@ import (
 	"strings"
 )
 
-func pageHandler(w http.ResponseWriter, r *http.Request, c *Context) error {
-	vars := mux.Vars(r)
+func pageHandler(c *Context) error {
+	vars := mux.Vars(c.Request)
 	page := vars["page"]
 
 	switch page {
@@ -23,7 +23,7 @@ func pageHandler(w http.ResponseWriter, r *http.Request, c *Context) error {
 			"keywords": page,
 		}
 
-		err := Templates.ExecuteTemplate(w, path.Join(page+".html"), data)
+		err := Templates.ExecuteTemplate(c.Response, path.Join(page+".html"), data)
 		if err != nil {
 			return err
 		}

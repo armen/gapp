@@ -18,7 +18,7 @@ func (e *HandlerError) Error() string {
 	return e.Err.Error()
 }
 
-type Handler func(http.ResponseWriter, *http.Request, *Context) error
+type Handler func(*Context) error
 
 func (f Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
@@ -37,7 +37,7 @@ func (f Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	var err *HandlerError
 
-	if e := f(w, r, c); e != nil {
+	if e := f(c); e != nil {
 
 		// If it's a regular error convert it to *handleError
 		if herr, ok := e.(*HandlerError); !ok {

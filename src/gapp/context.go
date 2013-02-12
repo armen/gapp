@@ -8,13 +8,15 @@ import (
 )
 
 type Context struct {
-	Session *sessions.Session
-	User    *User
+	Session  *sessions.Session
+	User     *User
+	Response http.ResponseWriter
+	Request  *http.Request
 }
 
 func newContext(w http.ResponseWriter, r *http.Request) (*Context, error) {
 
-	context := &Context{}
+	context := &Context{Response: w, Request: r}
 
 	// Create a session and store it in cookie so that we can recognize the user when he/she gets back
 	// TODO: read session/cookie name from config

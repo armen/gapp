@@ -54,7 +54,7 @@ func initOauthCfg() {
 	}
 }
 
-func signinHandler(w http.ResponseWriter, r *http.Request, c *Context) error {
+func signinHandler(c *Context) error {
 
 	data := map[string]interface{}{
 		"BUILD":    BuildId,
@@ -63,7 +63,7 @@ func signinHandler(w http.ResponseWriter, r *http.Request, c *Context) error {
 		"keywords": "signin, signup, loging, register",
 	}
 
-	err := Templates.ExecuteTemplate(w, "signin.html", data)
+	err := Templates.ExecuteTemplate(c.Response, "signin.html", data)
 	if err != nil {
 		return err
 	}
@@ -71,7 +71,7 @@ func signinHandler(w http.ResponseWriter, r *http.Request, c *Context) error {
 	return nil
 }
 
-func googleSigninHandler(w http.ResponseWriter, r *http.Request, c *Context) error {
+func googleSigninHandler(c *Context) error {
 
 	initOauthCfg()
 
@@ -82,17 +82,17 @@ func googleSigninHandler(w http.ResponseWriter, r *http.Request, c *Context) err
 	url := oauthCfg.AuthCodeURL("")
 
 	// Redirect user to that page
-	http.Redirect(w, r, url, http.StatusFound)
+	http.Redirect(c.Response, c.Request, url, http.StatusFound)
 
 	return nil
 }
 
-func googleCallbackHandler(w http.ResponseWriter, r *http.Request, c *Context) error {
+func googleCallbackHandler(c *Context) error {
 
 	userid := c.Session.Values["userid"].(string)
 
 	// Get the code from the response
-	code := r.FormValue("code")
+	code := c.Request.FormValue("code")
 
 	t := &oauth.Transport{oauth.Config: oauthCfg}
 
@@ -107,7 +107,7 @@ func googleCallbackHandler(w http.ResponseWriter, r *http.Request, c *Context) e
 	if err != nil {
 		return err
 	}
-	defer r.Body.Close()
+	defer c.Request.Body.Close()
 
 	var user User
 	err = json.NewDecoder(resp.Body).Decode(&user)
@@ -116,7 +116,7 @@ func googleCallbackHandler(w http.ResponseWriter, r *http.Request, c *Context) e
 	}
 
 	user.ID = userid
-	fmt.Fprintf(w, "%#v", user)
+	fmt.Fprintf(c.Response, "%#v", user)
 
 	return nil
 }
