@@ -2,7 +2,6 @@ package gapp
 
 import (
 	"github.com/gorilla/mux"
-	"github.com/gorilla/sessions"
 
 	"fmt"
 	"net/http"
@@ -10,7 +9,7 @@ import (
 	"strings"
 )
 
-func pageHandler(w http.ResponseWriter, r *http.Request, s *sessions.Session) error {
+func pageHandler(w http.ResponseWriter, r *http.Request, c *Context) error {
 	vars := mux.Vars(r)
 	page := vars["page"]
 

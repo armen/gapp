@@ -2,7 +2,6 @@ package gapp
 
 import (
 	"code.google.com/p/goauth2/oauth"
-	"github.com/gorilla/sessions"
 
 	"encoding/json"
 	"fmt"
@@ -55,7 +54,7 @@ func initOauthCfg() {
 	}
 }
 
-func signinHandler(w http.ResponseWriter, r *http.Request, s *sessions.Session) error {
+func signinHandler(w http.ResponseWriter, r *http.Request, c *Context) error {
 
 	data := map[string]interface{}{
 		"BUILD":    BuildId,
@@ -72,7 +71,7 @@ func signinHandler(w http.ResponseWriter, r *http.Request, s *sessions.Session) 
 	return nil
 }
 
-func googleSigninHandler(w http.ResponseWriter, r *http.Request, s *sessions.Session) error {
+func googleSigninHandler(w http.ResponseWriter, r *http.Request, c *Context) error {
 
 	initOauthCfg()
 
@@ -88,9 +87,9 @@ func googleSigninHandler(w http.ResponseWriter, r *http.Request, s *sessions.Ses
 	return nil
 }
 
-func googleCallbackHandler(w http.ResponseWriter, r *http.Request, s *sessions.Session) error {
+func googleCallbackHandler(w http.ResponseWriter, r *http.Request, c *Context) error {
 
-	userid := s.Values["userid"].(string)
+	userid := c.Session.Values["userid"].(string)
 
 	// Get the code from the response
 	code := r.FormValue("code")
@@ -109,9 +108,6 @@ func googleCallbackHandler(w http.ResponseWriter, r *http.Request, s *sessions.S
 		return err
 	}
 	defer r.Body.Close()
-
-	c := RedisPool.Get()
-	defer c.Close()
 
 	var user User
 	err = json.NewDecoder(resp.Body).Decode(&user)

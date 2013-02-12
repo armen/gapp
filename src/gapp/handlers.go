@@ -1,8 +1,6 @@
 package gapp
 
 import (
-	"github.com/gorilla/sessions"
-
 	"encoding/json"
 	"log"
 	"net/http"
@@ -20,7 +18,7 @@ func (e *HandlerError) Error() string {
 	return e.Err.Error()
 }
 
-type Handler func(http.ResponseWriter, *http.Request, *sessions.Session) error
+type Handler func(http.ResponseWriter, *http.Request, *Context) error
 
 func (f Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
@@ -32,14 +30,14 @@ func (f Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	s, e := genSession(w, r)
+	c, e := newContext(w, r)
 	if e != nil {
 		log.Print(e)
 	}
 
 	var err *HandlerError
 
-	if e := f(w, r, s); e != nil {
+	if e := f(w, r, c); e != nil {
 
 		// If it's a regular error convert it to *handleError
 		if herr, ok := e.(*HandlerError); !ok {
@@ -88,7 +86,7 @@ func (f Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func HomeHandler(w http.ResponseWriter, r *http.Request, s *sessions.Session) error {
+func HomeHandler(w http.ResponseWriter, r *http.Request, c *Context) error {
 
 	data := map[string]interface{}{
 		"BUILD":    BuildId,
