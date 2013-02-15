@@ -3,9 +3,9 @@ package gapp
 import (
 	"code.google.com/p/goconf/conf"
 	"github.com/garyburd/redigo/redis"
-	"github.com/gorilla/sessions"
 
 	"bytes"
+	"gapp/sessions"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -38,7 +38,7 @@ var (
 
 var (
 	sessionSecrets [][]byte
-	sessionStore   *sessions.CookieStore
+	sessionStore   *sessions.RedisStore
 )
 
 func Init(configFile string) {
@@ -111,6 +111,6 @@ func Init(configFile string) {
 	runtime.GOMAXPROCS(goMaxProcs)
 	DocRoot = path.Join(AppRoot, "templates")
 	Address = net.JoinHostPort(Host, Port)
-	sessionStore = sessions.NewCookieStore(bytes.Fields([]byte(secrets))...)
+	sessionStore = sessions.NewRedisStore(RedisPool, bytes.Fields([]byte(secrets))...)
 	Templates = template.Must(template.ParseGlob(path.Join(DocRoot, "*.html")))
 }
