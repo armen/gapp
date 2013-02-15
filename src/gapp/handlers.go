@@ -32,7 +32,7 @@ func (f Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	c, e := newContext(w, r)
 	if e != nil {
-		log.Print(e)
+		log.Println(e)
 	}
 
 	var err *HandlerError
