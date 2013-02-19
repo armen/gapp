@@ -86,7 +86,7 @@ func (f Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func HomeHandler(w http.ResponseWriter, r *http.Request, c *Context) error {
+func HomeHandler(c *Context) error {
 
 	data := map[string]interface{}{
 		"BUILD":    BuildId,
@@ -94,7 +94,7 @@ func HomeHandler(w http.ResponseWriter, r *http.Request, c *Context) error {
 		"keywords": "home",
 	}
 
-	err := Templates.ExecuteTemplate(w, "home.html", data)
+	err := Templates.ExecuteTemplate(c.Response, "home.html", data)
 	if err != nil {
 		return err
 	}
