@@ -5,7 +5,9 @@ import (
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
 
+	"encoding/base32"
 	"net/http"
+	"strings"
 )
 
 // NewRedisStore returns a new RedisStore
@@ -55,7 +57,7 @@ func (s *RedisStore) New(r *http.Request, name string) (*sessions.Session, error
 func (s *RedisStore) Save(r *http.Request, w http.ResponseWriter,
 	session *sessions.Session) error {
 	if session.ID == "" {
-		session.ID = string(securecookie.GenerateRandomKey(32))
+		session.ID = strings.TrimRight(base32.StdEncoding.EncodeToString(securecookie.GenerateRandomKey(32)), "=")
 	}
 	if err := s.save(session); err != nil {
 		return err
@@ -81,6 +83,11 @@ func (s *RedisStore) save(session *sessions.Session) error {
 	defer c.Close()
 
 	_, err = c.Do("SET", "s:"+session.ID, encoded)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.Do("EXPIRE", "s:"+session.ID, session.Options.MaxAge)
 
 	return err
 }
