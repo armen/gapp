@@ -2,11 +2,17 @@ package gapp
 
 import (
 	"code.google.com/p/goauth2/oauth"
+	"github.com/armen/hdis"
+	"github.com/garyburd/redigo/redis"
 
+	"bytes"
+	"encoding/gob"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"reflect"
 	"strings"
 )
 
@@ -22,6 +28,8 @@ type User struct {
 	Gender        string `json:"gender"`
 	Locale        string `json:"locale"`
 	HostDomain    string `json:"hd"`
+	Picture       string `json:"picture"`
+	Birthday      string `json:"birthday"`
 }
 
 const (
@@ -63,6 +71,8 @@ func signinHandler(c *Context) error {
 		"keywords": "signin, signup, loging, register",
 	}
 
+	// TODO: check if user is already logged on
+
 	err := Templates.ExecuteTemplate(c.Response, "signin.html", data)
 	if err != nil {
 		return err
@@ -89,8 +99,6 @@ func googleSigninHandler(c *Context) error {
 
 func googleCallbackHandler(c *Context) error {
 
-	userid := c.Session.Values["userid"].(string)
-
 	// Get the code from the response
 	code := c.Request.FormValue("code")
 
@@ -109,14 +117,91 @@ func googleCallbackHandler(c *Context) error {
 	}
 	defer c.Request.Body.Close()
 
-	var user User
-	err = json.NewDecoder(resp.Body).Decode(&user)
+	// For development purpose resp.Body is logged but in the future
+	// it can be used in the decoder directly
+	//
+	//      err = json.NewDecoder(resp.Body).Decode(&user)
+	//
+	content, _ := ioutil.ReadAll(resp.Body)
+	log.Println(string(content))
+
+	var user *User
+	err = json.Unmarshal(content, &user)
 	if err != nil {
 		return err
 	}
 
-	user.ID = userid
-	fmt.Fprintf(c.Response, "%#v", user)
+	err = user.Login(c)
+	if err != nil {
+		return err
+	}
+
+	// Put the user in the context
+	c.User = user
+
+	return nil
+}
+
+func (user *User) Login(c *Context) error {
+
+	conn := RedisPool.Get()
+	defer conn.Close()
+
+	hc := hdis.Conn{conn}
+
+	user.ID, _ = redis.String(conn.Do("ZSCORE", "users", user.Email))
+
+	if user.ID == "" {
+
+		// Yay another newcomer!
+		nextuserid, err := conn.Do("INCR", "next-user-id")
+		if err != nil {
+			return err
+		}
+
+		// Pad userid with 0
+		user.ID = fmt.Sprintf("%03d", nextuserid.(int64))
+
+		_, err = conn.Do("ZADD", "users", user.ID, user.Email)
+		if err != nil {
+			return err
+		}
+
+	} else {
+		// Pad user.ID with 0
+		user.ID = fmt.Sprintf("%03s", user.ID)
+	}
+
+	c.Session.Values["userid"] = user.ID
+	err := c.Session.Save(c.Request, c.Response)
+	if err != nil {
+		return err
+	}
+
+	// Encode to gob
+	var buffer bytes.Buffer
+	enc := gob.NewEncoder(&buffer)
+	err = enc.Encode(user)
+	if err != nil {
+		return err
+	}
+
+	key := "u:" + user.ID + ":gob"
+	_, err = hc.Set(key, buffer.Bytes())
+	if err != nil {
+		return err
+	}
+
+	keys := []string{"Name", "GivenName", "FamilyName", "Email", "Gender", "Picture", "Birthday"}
+	for _, key := range keys {
+		rediskey := "u:" + user.ID + ":" + strings.ToLower(key)
+		_, err = hc.Set(rediskey, reflect.ValueOf(user).Elem().FieldByName(key).String())
+		if err != nil {
+			return err
+		}
+	}
+
+	http.Redirect(c.Response, c.Request, "/", http.StatusSeeOther)
 
 	return nil
 }
