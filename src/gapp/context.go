@@ -1,8 +1,12 @@
 package gapp
 
 import (
+	"github.com/armen/hdis"
+	"github.com/garyburd/redigo/redis"
 	"github.com/gorilla/sessions"
 
+	"bytes"
+	"encoding/gob"
 	"gapp/utils"
 	"net/http"
 )
@@ -33,10 +37,41 @@ func newContext(w http.ResponseWriter, r *http.Request) (*Context, error) {
 	}
 
 	// Generate new userid if there isn't any
-	userid, ok := context.Session.Values["userid"]
+	userid, ok := context.Session.Values["userid"].(string)
 	if !ok {
+		// It's an anonymous user
 		userid = utils.GenId(16)
 		context.Session.Values["userid"] = userid
+
+		context.User = &User{Id: userid, Name: "Anonymous"}
+
+	} else {
+		// Let's fetch user's profile
+
+		conn := RedisPool.Get()
+		defer conn.Close()
+
+		hc := hdis.Conn{conn}
+
+		key := "u:" + userid + ":gob"
+
+		if ok, _ := redis.Bool(hc.Do("HEXISTS", key)); ok {
+			u, err := redis.Bytes(hc.Get(key))
+			if err != nil {
+				return nil, err
+			}
+
+			var user *User
+
+			buffer := bytes.NewBuffer(u)
+			dec := gob.NewDecoder(buffer)
+			err = dec.Decode(&user)
+			if err != nil {
+				return nil, err
+			}
+
+			context.User = user
+		}
 	}
 
 	// Saving session everytime it gets access helps to push expiry date further

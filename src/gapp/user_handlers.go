@@ -17,8 +17,8 @@ import (
 )
 
 type User struct {
-	ID            string
-	OauthID       string `json:"id"`
+	Id            string
+	OauthId       string `json:"id"`
 	Email         string `json:"email"`
 	VerifiedEmail bool   `json:"verified_email",bool`
 	Name          string `json:"name"`
@@ -149,9 +149,9 @@ func (user *User) Login(c *Context) error {
 
 	hc := hdis.Conn{conn}
 
-	user.ID, _ = redis.String(conn.Do("ZSCORE", "users", user.Email))
+	user.Id, _ = redis.String(conn.Do("ZSCORE", "users", user.Email))
 
-	if user.ID == "" {
+	if user.Id == "" {
 
 		// Yay another newcomer!
 		nextuserid, err := conn.Do("INCR", "next-user-id")
@@ -160,19 +160,20 @@ func (user *User) Login(c *Context) error {
 		}
 
 		// Pad userid with 0
-		user.ID = fmt.Sprintf("%03d", nextuserid.(int64))
+		user.Id = fmt.Sprintf("%03d", nextuserid.(int64))
 
-		_, err = conn.Do("ZADD", "users", user.ID, user.Email)
+		_, err = conn.Do("ZADD", "users", user.Id, user.Email)
 		if err != nil {
 			return err
 		}
 
 	} else {
-		// Pad user.ID with 0
-		user.ID = fmt.Sprintf("%03s", user.ID)
+		// Pad user.Id with 0
+		user.Id = fmt.Sprintf("%03s", user.Id)
 	}
 
-	c.Session.Values["userid"] = user.ID
+	// Replace c.User.Id with new userid
+	c.Session.Values["userid"] = user.Id
 	err := c.Session.Save(c.Request, c.Response)
 	if err != nil {
 		return err
@@ -186,7 +187,8 @@ func (user *User) Login(c *Context) error {
 		return err
 	}
 
-	key := "u:" + user.ID + ":gob"
+	// Every time set the user's info, actually it'll update the profile
+	key := "u:" + user.Id + ":gob"
 	_, err = hc.Set(key, buffer.Bytes())
 	if err != nil {
 		return err
@@ -194,7 +196,7 @@ func (user *User) Login(c *Context) error {
 
 	keys := []string{"Name", "GivenName", "FamilyName", "Email", "Gender", "Picture", "Birthday"}
 	for _, key := range keys {
-		rediskey := "u:" + user.ID + ":" + strings.ToLower(key)
+		rediskey := "u:" + user.Id + ":" + strings.ToLower(key)
 		_, err = hc.Set(rediskey, reflect.ValueOf(user).Elem().FieldByName(key).String())
 		if err != nil {
 			return err
