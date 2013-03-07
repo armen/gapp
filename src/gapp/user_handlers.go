@@ -18,6 +18,7 @@ import (
 
 type User struct {
 	Id            string
+	SignedIn      bool
 	OauthId       string `json:"id"`
 	Email         string `json:"email"`
 	VerifiedEmail bool   `json:"verified_email",bool`
@@ -77,6 +78,17 @@ func signinHandler(c *Context) error {
 	if err != nil {
 		return err
 	}
+
+	return nil
+}
+
+func signoutHandler(c *Context) error {
+
+	// MaxAge < 0 deletes the session
+	c.Session.Options.MaxAge = -1
+	c.Session.Save(c.Request, c.Response)
+
+	http.Redirect(c.Response, c.Request, "/", http.StatusSeeOther)
 
 	return nil
 }
@@ -171,6 +183,9 @@ func (user *User) Login(c *Context) error {
 		// Pad user.Id with 0
 		user.Id = fmt.Sprintf("%03s", user.Id)
 	}
+
+	// Signin the user
+	user.SignedIn = true
 
 	// Replace c.User.Id with new userid
 	c.Session.Values["userid"] = user.Id

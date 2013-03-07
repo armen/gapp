@@ -31,6 +31,7 @@ var (
 
 var (
 	SigninHandler         = Handler(signinHandler)
+	SignoutHandler        = Handler(signoutHandler)
 	GoogleSigninHandler   = Handler(googleSigninHandler)
 	GoogleCallbackHandler = Handler(googleCallbackHandler)
 	PageHandler           = Handler(pageHandler)
