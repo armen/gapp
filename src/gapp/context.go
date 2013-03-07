@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"gapp/utils"
+	"log"
 	"net/http"
 )
 
@@ -27,7 +28,7 @@ func newContext(w http.ResponseWriter, r *http.Request) (*Context, error) {
 	var err error
 	context.Session, err = sessionStore.Get(r, "gapp")
 	if err != nil {
-		return nil, err
+		log.Printf("error in getting session store: %q", err)
 	}
 
 	// Changed maximum age of the session to one month
@@ -43,8 +44,6 @@ func newContext(w http.ResponseWriter, r *http.Request) (*Context, error) {
 		userid = utils.GenId(16)
 		context.Session.Values["userid"] = userid
 
-		context.User = &User{Id: userid, Name: "Anonymous"}
-
 	} else {
 		// Let's fetch user's profile
 
@@ -57,21 +56,26 @@ func newContext(w http.ResponseWriter, r *http.Request) (*Context, error) {
 
 		if ok, _ := redis.Bool(hc.Do("HEXISTS", key)); ok {
 			u, err := redis.Bytes(hc.Get(key))
-			if err != nil {
-				return nil, err
+			if err == nil {
+				var user *User
+
+				buffer := bytes.NewBuffer(u)
+				dec := gob.NewDecoder(buffer)
+				err = dec.Decode(&user)
+
+				if err == nil {
+					context.User = user
+				} else {
+					log.Printf("error in decoding user's (%s) profile: %q", userid, err)
+				}
+			} else {
+				log.Printf("error in fetching user's (%s) profile from redis: %q", userid, err)
 			}
-
-			var user *User
-
-			buffer := bytes.NewBuffer(u)
-			dec := gob.NewDecoder(buffer)
-			err = dec.Decode(&user)
-			if err != nil {
-				return nil, err
-			}
-
-			context.User = user
 		}
+	}
+
+	if context.User == nil {
+		context.User = &User{Id: userid, Name: "Anonymous"}
 	}
 
 	// Saving session everytime it gets access helps to push expiry date further
