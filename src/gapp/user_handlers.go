@@ -2,36 +2,14 @@ package gapp
 
 import (
 	"code.google.com/p/goauth2/oauth"
-	"github.com/armen/hdis"
-	"github.com/garyburd/redigo/redis"
 
-	"bytes"
-	"encoding/gob"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
-	"reflect"
 	"strings"
 )
-
-type User struct {
-	Id            string
-	SignedIn      bool
-	OauthId       string `json:"id"`
-	Email         string `json:"email"`
-	VerifiedEmail bool   `json:"verified_email",bool`
-	Name          string `json:"name"`
-	GivenName     string `json:"given_name"`
-	FamilyName    string `json:"family_name"`
-	Link          string `json:"link"`
-	Gender        string `json:"gender"`
-	Locale        string `json:"locale"`
-	HostDomain    string `json:"hd"`
-	Picture       string `json:"picture"`
-	Birthday      string `json:"birthday"`
-}
 
 const (
 	redirectURL    = "http://%s/google-callback"
@@ -84,11 +62,12 @@ func signinHandler(c *Context) error {
 
 func signoutHandler(c *Context) error {
 
-	// MaxAge < 0 deletes the session
-	c.Session.Options.MaxAge = -1
-	c.Session.Save(c.Request, c.Response)
+	err := c.User.Logout(c)
+	if err != nil {
+		return err
+	}
 
-	http.Redirect(c.Response, c.Request, "/", http.StatusSeeOther)
+	http.Redirect(c.Response, c.Request, "/", http.StatusFound)
 
 	return nil
 }
@@ -151,74 +130,14 @@ func googleCallbackHandler(c *Context) error {
 	// Put the user in the context
 	c.User = user
 
-	return nil
-}
-
-func (user *User) Login(c *Context) error {
-
-	conn := RedisPool.Get()
-	defer conn.Close()
-
-	hc := hdis.Conn{conn}
-
-	user.Id, _ = redis.String(conn.Do("ZSCORE", "users", user.Email))
-
-	if user.Id == "" {
-
-		// Yay another newcomer!
-		nextuserid, err := conn.Do("INCR", "next-user-id")
-		if err != nil {
-			return err
-		}
-
-		// Pad userid with 0
-		user.Id = fmt.Sprintf("%03d", nextuserid.(int64))
-
-		_, err = conn.Do("ZADD", "users", user.Id, user.Email)
-		if err != nil {
-			return err
-		}
-
-	} else {
-		// Pad user.Id with 0
-		user.Id = fmt.Sprintf("%03s", user.Id)
-	}
-
-	// Signin the user
-	user.SignedIn = true
-
-	// Replace c.User.Id with new userid
-	c.Session.Values["userid"] = user.Id
-	err := c.Session.Save(c.Request, c.Response)
+	// Update userid in session
+	c.Session.Values["userid"] = c.User.Id
+	err = c.Session.Save(c.Request, c.Response)
 	if err != nil {
 		return err
 	}
 
-	// Encode to gob
-	var buffer bytes.Buffer
-	enc := gob.NewEncoder(&buffer)
-	err = enc.Encode(user)
-	if err != nil {
-		return err
-	}
-
-	// Every time set the user's info, actually it'll update the profile
-	key := "u:" + user.Id + ":gob"
-	_, err = hc.Set(key, buffer.Bytes())
-	if err != nil {
-		return err
-	}
-
-	keys := []string{"Name", "GivenName", "FamilyName", "Email", "Gender", "Picture", "Birthday"}
-	for _, key := range keys {
-		rediskey := "u:" + user.Id + ":" + strings.ToLower(key)
-		_, err = hc.Set(rediskey, reflect.ValueOf(user).Elem().FieldByName(key).String())
-		if err != nil {
-			return err
-		}
-	}
-
-	http.Redirect(c.Response, c.Request, "/", http.StatusSeeOther)
+	http.Redirect(c.Response, c.Request, "/", http.StatusFound)
 
 	return nil
 }
