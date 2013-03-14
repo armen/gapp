@@ -6,6 +6,7 @@ import (
 
 	"bytes"
 	"gapp/sessions"
+	"gapp/utils"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -42,7 +43,7 @@ var (
 	sessionStore   *sessions.RedisStore
 )
 
-func Init(configFile string) {
+func Init(configFile string, externalFuncMap template.FuncMap) {
 
 	var err error
 
@@ -109,9 +110,19 @@ func Init(configFile string) {
 		},
 	}
 
+	// Default funcMap is merged with external funcMap
+	funcMap := template.FuncMap{
+		"user":         NewUser,
+		"humanizeTime": utils.HumanizeTime,
+	}
+
+	for funcName, function := range externalFuncMap {
+		funcMap[funcName] = function
+	}
+
 	runtime.GOMAXPROCS(goMaxProcs)
 	DocRoot = path.Join(AppRoot, "templates")
 	Address = net.JoinHostPort(Host, Port)
 	sessionStore = sessions.NewRedisStore(RedisPool, bytes.Fields([]byte(secrets))...)
-	Templates = template.Must(template.ParseGlob(path.Join(DocRoot, "*.html")))
+	Templates = template.Must(template.New("gapp").Funcs(funcMap).ParseGlob(path.Join(DocRoot, "*.html")))
 }
