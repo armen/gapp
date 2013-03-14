@@ -28,6 +28,10 @@ type User struct {
 	Birthday      string `json:"birthday"`
 }
 
+func NewUser(id string) *User {
+	return &User{Id: id}
+}
+
 var (
 	previousPicture string
 )
