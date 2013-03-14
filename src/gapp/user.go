@@ -132,3 +132,14 @@ func (user *User) PreLogout(c *Context) error {
 func (user *User) PostLogout(c *Context) error {
 	return nil
 }
+
+func (user *User) Profile(attribute string) string {
+	conn := RedisPool.Get()
+	defer conn.Close()
+
+	hc := hdis.Conn{conn}
+
+	attr, _ := redis.String(hc.Get("u:" + user.Id + ":" + strings.ToLower(attribute)))
+
+	return attr
+}
