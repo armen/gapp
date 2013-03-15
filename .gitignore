@@ -6,6 +6,8 @@ code.google.com
 *.orig
 static/css/*.css
 static/js/*.js
+static/users/*
+!static/users/000/*
 playbooks/files/ssh/id_rsa
 playbooks/files/ssh/id_rsa.pub
 playbooks/files/ssh/authorized_keys
