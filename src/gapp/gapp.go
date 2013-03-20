@@ -94,7 +94,7 @@ func Init(configFile string, externalFuncMap template.FuncMap) {
 
 	build, err := ioutil.ReadFile(path.Join(AppRoot, "conf", "BUILD"))
 	if err != nil {
-		log.Fatalf("%s - Please make sure BUILD file is created with \"make styles\"", err)
+		log.Fatalf("%s - Please make sure BUILD file is created with \"make assets\"", err)
 	}
 	BuildId = string(bytes.TrimSpace(build))
 

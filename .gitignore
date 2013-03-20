@@ -4,7 +4,7 @@ code.google.com
 *.swp
 *.swo
 static/css/*.css
-static/js/min/*.min.js
+static/js/min/*.js
 playbooks/files/ssh/id_rsa
 playbooks/files/ssh/id_rsa.pub
 playbooks/files/ssh/authorized_keys
