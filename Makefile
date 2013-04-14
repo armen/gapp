@@ -3,17 +3,29 @@ BUILD = $(shell date +'%Y%m%d%H%M%S')
 install:
 	go get gapp
 
-assets:
+comp-assets:
 	echo ${BUILD} > conf/BUILD
 	git clean -fX static/css
-	lessc -x --yui-compress less/bootstrap.less static/css/bootstrap.${BUILD}.css
-	lessc -x --yui-compress less/responsive.less static/css/bootstrap-responsive.${BUILD}.css
-	lessc -x --yui-compress less/gapp.less static/css/gapp.${BUILD}.css
+	lessc -x --yui-compress assets/less/bootstrap.less static/css/bootstrap.${BUILD}.css
+	lessc -x --yui-compress assets/less/responsive.less static/css/bootstrap-responsive.${BUILD}.css
+	lessc -x --yui-compress assets/less/gapp.less static/css/gapp.${BUILD}.css
 	git clean -fX static/js/min
-	uglifyjs static/js/jquery-1.7.2.js > static/js/min/jquery-1.7.2.${BUILD}.js
-	uglifyjs static/js/gapp.js > static/js/min/gapp.${BUILD}.js
-	uglifyjs static/js/bootstrap-tooltip.js > static/js/min/bootstrap-tooltip.${BUILD}.js
-	uglifyjs static/js/bootstrap-popover.js > static/js/min/bootstrap-popover.${BUILD}.js
+	uglifyjs assets/js/jquery-1.7.2.js > static/js/jquery-1.7.2.${BUILD}.js
+	uglifyjs assets/js/gapp.js > static/js/gapp.${BUILD}.js
+	uglifyjs assets/js/bootstrap-tooltip.js > static/js/bootstrap-tooltip.${BUILD}.js
+	uglifyjs assets/js/bootstrap-popover.js > static/js/bootstrap-popover.${BUILD}.js
+
+dev-assets:
+	echo ${BUILD} > conf/BUILD
+	git clean -fX static/css
+	lessc assets/less/bootstrap.less static/css/bootstrap.${BUILD}.css
+	lessc assets/less/responsive.less static/css/bootstrap-responsive.${BUILD}.css
+	lessc assets/less/gapp.less static/css/gapp.${BUILD}.css
+	git clean -fX static/js/min
+	cp assets/js/jquery-1.7.2.js static/js/jquery-1.7.2.${BUILD}.js
+	cp assets/js/gapp.js static/js/gapp.${BUILD}.js
+	cp assets/js/bootstrap-tooltip.js static/js/bootstrap-tooltip.${BUILD}.js
+	cp assets/js/bootstrap-popover.js static/js/bootstrap-popover.${BUILD}.js
 
 gofmt-hook:
 	wget -q https://raw.github.com/edsrzf/gofmt-git-hook/master/fmt-check -O /tmp/pre-commit
