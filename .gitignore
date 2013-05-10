@@ -3,6 +3,7 @@ pkg
 code.google.com
 *.swp
 *.swo
+*.orig
 static/css/*.css
 static/js/*.js
 playbooks/files/ssh/id_rsa
