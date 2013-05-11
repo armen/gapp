@@ -34,11 +34,12 @@ func main() {
     flag.Usage = Usage
     flag.Parse()
 
-    gapp.Init(*flagConf)
+    gapp.Init(*flagConf, nil)
 
     r := mux.NewRouter()
     r.Handle("/", gapp.Handler(gapp.HomeHandler)).Methods("GET")
     r.Handle("/signin", gapp.SigninHandler).Methods("GET")
+    r.Handle("/signout", gapp.SignoutHandler).Methods("GET")
     r.Handle("/google-signin", gapp.GoogleSigninHandler).Methods("POST")
     r.Handle("/google-callback", gapp.GoogleCallbackHandler).Methods("GET")
     r.Handle("/{page}", gapp.PageHandler).Methods("GET")
