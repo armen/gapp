@@ -22,10 +22,10 @@ dev-assets:
 	lessc assets/less/responsive.less static/css/bootstrap-responsive.${BUILD}.css
 	lessc assets/less/gapp.less static/css/gapp.${BUILD}.css
 	git clean -fX static/js
-	cp assets/js/jquery-1.7.2.js static/js/jquery-1.7.2.${BUILD}.js
-	cp assets/js/gapp.js static/js/gapp.${BUILD}.js
-	cp assets/js/bootstrap-tooltip.js static/js/bootstrap-tooltip.${BUILD}.js
-	cp assets/js/bootstrap-popover.js static/js/bootstrap-popover.${BUILD}.js
+	ln -sf ../../assets/js/jquery-1.7.2.js static/js/jquery-1.7.2.${BUILD}.js
+	ln -sf ../../assets/js/gapp.js static/js/gapp.${BUILD}.js
+	ln -sf ../../assets/js/bootstrap-tooltip.js static/js/bootstrap-tooltip.${BUILD}.js
+	ln -sf ../../assets/js/bootstrap-popover.js static/js/bootstrap-popover.${BUILD}.js
 
 gofmt-hook:
 	wget -q https://raw.github.com/edsrzf/gofmt-git-hook/master/fmt-check -O /tmp/pre-commit
