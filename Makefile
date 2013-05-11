@@ -21,7 +21,7 @@ dev-assets:
 	lessc assets/less/bootstrap.less static/css/bootstrap.${BUILD}.css
 	lessc assets/less/responsive.less static/css/bootstrap-responsive.${BUILD}.css
 	lessc assets/less/gapp.less static/css/gapp.${BUILD}.css
-	git clean -fX static/js/min
+	git clean -fX static/js
 	cp assets/js/jquery-1.7.2.js static/js/jquery-1.7.2.${BUILD}.js
 	cp assets/js/gapp.js static/js/gapp.${BUILD}.js
 	cp assets/js/bootstrap-tooltip.js static/js/bootstrap-tooltip.${BUILD}.js
