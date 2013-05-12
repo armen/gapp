@@ -9,7 +9,7 @@ comp-assets:
 	lessc -x --yui-compress assets/less/bootstrap.less static/css/bootstrap.${BUILD}.css
 	lessc -x --yui-compress assets/less/responsive.less static/css/bootstrap-responsive.${BUILD}.css
 	lessc -x --yui-compress assets/less/gapp.less static/css/gapp.${BUILD}.css
-	git clean -fX static/js/min
+	git clean -fX static/js
 	uglifyjs assets/js/jquery-1.7.2.js > static/js/jquery-1.7.2.${BUILD}.js
 	uglifyjs assets/js/gapp.js > static/js/gapp.${BUILD}.js
 	uglifyjs assets/js/bootstrap-tooltip.js > static/js/bootstrap-tooltip.${BUILD}.js
