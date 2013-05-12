@@ -3,10 +3,19 @@ package gapp
 import (
 	"github.com/armen/hdis"
 	"github.com/garyburd/redigo/redis"
+	"github.com/nfnt/resize"
 
 	"bytes"
+	"crypto/tls"
 	"encoding/gob"
 	"fmt"
+	"image"
+	"image/draw"
+	"image/jpeg"
+	"log"
+	"net/http"
+	"os"
+	"path"
 	"reflect"
 	"strings"
 )
@@ -103,10 +112,83 @@ func (user *User) Login(c *Context) error {
 }
 
 func (user *User) PreLogin(c *Context) error {
+
+	if user.Id != "" {
+		conn := RedisPool.Get()
+		defer conn.Close()
+
+		hc := hdis.Conn{conn}
+		previousPicture, _ = redis.String(hc.Get("u:" + user.Id + ":picture"))
+	}
+
 	return nil
 }
 
 func (user *User) PostLogin(c *Context) error {
+
+	if previousPicture != user.Picture {
+
+		tr := &http.Transport{
+			TLSClientConfig:    &tls.Config{InsecureSkipVerify: true},
+			DisableCompression: true,
+		}
+		client := &http.Client{Transport: tr}
+
+		resp, err := client.Get(user.Picture)
+		if err != nil {
+			// Something is wrong with the picture, lets check it next time
+			user.Picture = ""
+			log.Println(err)
+			return nil
+		}
+		defer resp.Body.Close()
+
+		// Decode user's image
+		img, _, err := image.Decode(resp.Body)
+		if err != nil {
+			// Something is wrong with the picture, lets check it next time
+			user.Picture = ""
+			log.Println(err)
+			return nil
+		}
+
+		thumbPath := path.Join(AppRoot, "static", "users", user.Id)
+		err = os.MkdirAll(thumbPath, 0777)
+		if err != nil {
+			user.Picture = ""
+			log.Println(err)
+			return nil
+		}
+
+		avatars := []uint{32, 92}
+
+		for _, size := range avatars {
+
+			resizedImg := resize.Resize(size+1, size+1, img, resize.Lanczos3)
+			thumb, err := os.Create(path.Join(thumbPath, fmt.Sprintf("avatar-%dx%d.jpg", size, size)))
+			if err != nil {
+				user.Picture = ""
+				os.RemoveAll(thumbPath)
+				log.Println(err)
+				return nil
+			}
+			defer thumb.Close()
+
+			// remove left and top's, 1px border
+			rect := image.Rect(0, 0, int(size), int(size))
+			final := image.NewRGBA(rect)
+			draw.Draw(final, rect, resizedImg, image.Point{1, 1}, draw.Src)
+
+			err = jpeg.Encode(thumb, final, nil)
+			if err != nil {
+				user.Picture = ""
+				os.RemoveAll(thumbPath)
+				log.Println(err)
+				return nil
+			}
+		}
+	}
+
 	return nil
 }
 
