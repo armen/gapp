@@ -70,6 +70,7 @@ func (f Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		default:
 			data := map[string]interface{}{
 				"BUILD":    BuildId,
+				"user":     &c.User,
 				"title":    http.StatusText(err.Code),
 				"keywords": strconv.Itoa(err.Code) + ", " + http.StatusText(err.Code),
 				"error":    err.Message,
@@ -90,6 +91,7 @@ func HomeHandler(c *Context) error {
 
 	data := map[string]interface{}{
 		"BUILD":    BuildId,
+		"user":     &c.User,
 		"title":    "Home",
 		"keywords": "home",
 	}

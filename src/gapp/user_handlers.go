@@ -45,6 +45,7 @@ func signinHandler(c *Context) error {
 
 	data := map[string]interface{}{
 		"BUILD":    BuildId,
+		"user":     &c.User,
 		"page":     map[string]bool{"signin": true}, // Select signin in the top navbar
 		"title":    "Signin & Signup",
 		"keywords": "signin, signup, loging, register",

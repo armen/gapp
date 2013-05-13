@@ -18,6 +18,7 @@ func pageHandler(c *Context) error {
 
 		data := map[string]interface{}{
 			"BUILD":    BuildId,
+			"user":     &c.User,
 			"page":     map[string]bool{page: true}, // Select the page in the top navbar
 			"title":    strings.Title(page),
 			"keywords": page,
